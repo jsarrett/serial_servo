@@ -35,6 +35,7 @@
  */
 
 #include "SerialBLDC.h"
+#define countof(tab) (sizeof(tab) / sizeof((tab)[0]))
 
 /** LUFA CDC Class driver interface configuration and state information. This structure is
  *  passed to all CDC Class driver functions, so that multiple instances of the same class
@@ -72,6 +73,28 @@ USB_ClassInfo_CDC_Device_t SerialBLDC_CDC_Interface =
 static FILE USBSerialStream;
 
 
+/** timer interrupt to update output pins at regular timesteps */
+static uint8_t pattern[] = {
+    /* http://www.berryjam.eu/2015/04/driving-bldc-gimbals-at-super-slow-speeds-with-arduino/ */
+    _BV(0) | _BV(5),
+    _BV(2) | _BV(5),
+    _BV(2) | _BV(1),
+    _BV(4) | _BV(1),
+    _BV(4) | _BV(3),
+    _BV(0) | _BV(3),
+
+};
+ISR(TIMER1_OVF_vect) {
+    static uint8_t idx = 0;
+    static uint8_t next = 0;
+    PORTB = next;
+    next = pattern[idx];
+    idx++;
+    if (idx >= countof(pattern))
+        idx = 0;
+}
+
+
 /** Main program entry point. This routine contains the overall program flow, including initial
  *  setup of all components and the main program loop.
  */
@@ -93,12 +116,7 @@ int main(void)
 		int16_t ReceivedByte = CDC_Device_ReceiveByte(&SerialBLDC_CDC_Interface);
         if (!(ReceivedByte < 0)) {
             /* got a good byte, so set the timer outputs to it */
-            /* initally 1ms, which is the minimum  pulse length for a servo */
-            OCR1A = (F_CPU/64UL)/1000UL + (ReceivedByte & 0xFF);
-            OCR1B = (F_CPU/64UL)/1000UL + (ReceivedByte & 0xFF);
-            OCR1C = (F_CPU/64UL)/1000UL + (ReceivedByte & 0xFF);
-            //CDC_Device_SendByte(&SerialBLDC_CDC_Interface, ReceivedByte);
-            //CDC_Device_SendByte(&SerialBLDC_CDC_Interface, OCR1A-250);
+            OCR1A = (ReceivedByte & 0xFF)<<8;
         }
 
 		CDC_Device_USBTask(&SerialBLDC_CDC_Interface);
@@ -133,8 +151,8 @@ void SetupHardware(void)
 	//LEDs_Init();
 	USB_Init();
 
-    /*OC1[ABC] as output, which is PB[567] */
-    DDRB |= _BV(5) | _BV(6) | _BV(7);
+    /* PB[2-7] as output */
+    DDRB |= _BV(0) | _BV(1) | _BV(2) | _BV(3) | _BV(4) | _BV(5);
 }
 
 /** Event handler for the library USB Connection event. */
