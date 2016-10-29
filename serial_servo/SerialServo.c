@@ -82,15 +82,24 @@ int main(void)
 	/* Create a regular character stream for the interface so that it can be used with the stdio.h functions */
 	CDC_Device_CreateStream(&SerialServo_CDC_Interface, &USBSerialStream);
 
-	LEDs_SetAllLEDs(LEDMASK_USB_NOTREADY);
+	//LEDs_SetAllLEDs(LEDMASK_USB_NOTREADY);
 	GlobalInterruptEnable();
 
+    timer1_reset();
+    timer1_start();
 	for (;;)
 	{
-		CheckJoystickMovement();
-
-		/* Must throw away unused bytes from the host, or it will lock up while waiting for the device */
-		CDC_Device_ReceiveByte(&SerialServo_CDC_Interface);
+        /* try and read a byte */
+		int16_t ReceivedByte = CDC_Device_ReceiveByte(&SerialServo_CDC_Interface);
+        if (!(ReceivedByte < 0)) {
+            /* got a good byte, so set the timer outputs to it */
+            /* initally 1ms, which is the minimum  pulse length for a servo */
+            OCR1A = (F_CPU/64UL)/1000UL + (ReceivedByte & 0xFF);
+            OCR1B = (F_CPU/64UL)/1000UL + (ReceivedByte & 0xFF);
+            OCR1C = (F_CPU/64UL)/1000UL + (ReceivedByte & 0xFF);
+            //CDC_Device_SendByte(&SerialServo_CDC_Interface, ReceivedByte);
+            //CDC_Device_SendByte(&SerialServo_CDC_Interface, OCR1A-250);
+        }
 
 		CDC_Device_USBTask(&SerialServo_CDC_Interface);
 		USB_USBTask();
@@ -120,53 +129,24 @@ void SetupHardware(void)
 #endif
 
 	/* Hardware Initialization */
-	Joystick_Init();
-	LEDs_Init();
+    Timers_Init();
+	//LEDs_Init();
 	USB_Init();
-}
 
-/** Checks for changes in the position of the board joystick, sending strings to the host upon each change. */
-void CheckJoystickMovement(void)
-{
-	uint8_t     JoyStatus_LCL = Joystick_GetStatus();
-	char*       ReportString  = NULL;
-	static bool ActionSent    = false;
-
-	if (JoyStatus_LCL & JOY_UP)
-	  ReportString = "Joystick Up\r\n";
-	else if (JoyStatus_LCL & JOY_DOWN)
-	  ReportString = "Joystick Down\r\n";
-	else if (JoyStatus_LCL & JOY_LEFT)
-	  ReportString = "Joystick Left\r\n";
-	else if (JoyStatus_LCL & JOY_RIGHT)
-	  ReportString = "Joystick Right\r\n";
-	else if (JoyStatus_LCL & JOY_PRESS)
-	  ReportString = "Joystick Pressed\r\n";
-	else
-	  ActionSent = false;
-
-	if ((ReportString != NULL) && (ActionSent == false))
-	{
-		ActionSent = true;
-
-		/* Write the string to the virtual COM port via the created character stream */
-		fputs(ReportString, &USBSerialStream);
-
-		/* Alternatively, without the stream: */
-		// CDC_Device_SendString(&SerialServo_CDC_Interface, ReportString);
-	}
+    /*OC1[ABC] as output, which is PB[567] */
+    DDRB |= _BV(5) | _BV(6) | _BV(7);
 }
 
 /** Event handler for the library USB Connection event. */
 void EVENT_USB_Device_Connect(void)
 {
-	LEDs_SetAllLEDs(LEDMASK_USB_ENUMERATING);
+	//LEDs_SetAllLEDs(LEDMASK_USB_ENUMERATING);
 }
 
 /** Event handler for the library USB Disconnection event. */
 void EVENT_USB_Device_Disconnect(void)
 {
-	LEDs_SetAllLEDs(LEDMASK_USB_NOTREADY);
+	//LEDs_SetAllLEDs(LEDMASK_USB_NOTREADY);
 }
 
 /** Event handler for the library USB Configuration Changed event. */
@@ -176,7 +156,7 @@ void EVENT_USB_Device_ConfigurationChanged(void)
 
 	ConfigSuccess &= CDC_Device_ConfigureEndpoints(&SerialServo_CDC_Interface);
 
-	LEDs_SetAllLEDs(ConfigSuccess ? LEDMASK_USB_READY : LEDMASK_USB_ERROR);
+	//LEDs_SetAllLEDs(ConfigSuccess ? LEDMASK_USB_READY : LEDMASK_USB_ERROR);
 }
 
 /** Event handler for the library USB Control Request reception event. */
@@ -199,4 +179,5 @@ void EVENT_CDC_Device_ControLineStateChanged(USB_ClassInfo_CDC_Device_t *const C
 	   in the pending data from the USB endpoints.
 	*/
 	bool HostReady = (CDCInterfaceInfo->State.ControlLineStates.HostToDevice & CDC_CONTROL_LINE_OUT_DTR) != 0;
+    HostReady = HostReady;
 }

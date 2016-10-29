@@ -45,9 +45,9 @@
 		#include <stdio.h>
 
 		#include "Descriptors.h"
+        #include "timers.h"
 
 		#include <LUFA/Drivers/Board/LEDs.h>
-		#include <LUFA/Drivers/Board/Joystick.h>
 		#include <LUFA/Drivers/USB/USB.h>
 		#include <LUFA/Platform/Platform.h>
 
@@ -66,7 +66,6 @@
 
 	/* Function Prototypes: */
 		void SetupHardware(void);
-		void CheckJoystickMovement(void);
 
 		void EVENT_USB_Device_Connect(void);
 		void EVENT_USB_Device_Disconnect(void);
