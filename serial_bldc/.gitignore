@@ -1,0 +1,10 @@
+#ignore build files
+*.o
+*.d
+*.eep
+*.elf
+*.bin
+*.hex
+*.sym
+*.lss
+*.map
