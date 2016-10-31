@@ -76,12 +76,21 @@ static FILE USBSerialStream;
 /** timer interrupt to update output pins at regular timesteps */
 static uint8_t pattern[] = {
     /* http://www.berryjam.eu/2015/04/driving-bldc-gimbals-at-super-slow-speeds-with-arduino/ */
+    /* if they were all positive logic, this woudl be the pattern
     _BV(0) | _BV(5),
     _BV(2) | _BV(5),
     _BV(2) | _BV(1),
     _BV(4) | _BV(1),
     _BV(4) | _BV(3),
     _BV(0) | _BV(3),
+    */
+    //instead invert the sense of the high-side drivers
+    _BV(0) | (_BV(3) | _BV(1)),
+    _BV(2) | (_BV(3) | _BV(1)),
+    _BV(2) | (_BV(3) | _BV(5)),
+    _BV(4) | (_BV(3) | _BV(5)),
+    _BV(4) | (_BV(1) | _BV(5)),
+    _BV(0) | (_BV(1) | _BV(5)),
 
 };
 ISR(TIMER1_OVF_vect) {
