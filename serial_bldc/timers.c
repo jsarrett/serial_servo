@@ -34,7 +34,7 @@ void setup_timer1(void) {
     OCR1A = 0;
 
     /* interrupt on TOV (top) */
-    TIMSK0 = _BV(TOIE1);
+    TIMSK1 = _BV(TOIE1);
 }
 
 void Timers_Init(void) {
