@@ -109,7 +109,6 @@ int main(void)
 	GlobalInterruptEnable();
 
     timer1_reset();
-    timer1_start();
 	for (;;)
 	{
         /* try and read a byte */
@@ -117,6 +116,13 @@ int main(void)
         if (!(ReceivedByte < 0)) {
             /* got a good byte, so set the timer outputs to it */
             OCR1A = (ReceivedByte & 0xFF)<<8;
+            if (OCR1A != 0) {
+                timer1_reset();
+                timer1_start();
+            }else {
+                PORTB &= ~(_BV(0) | _BV(1) | _BV(2) | _BV(3) | _BV(4) | _BV(5));
+                timer1_stop();
+            }
         }
 
 		CDC_Device_USBTask(&SerialBLDC_CDC_Interface);
