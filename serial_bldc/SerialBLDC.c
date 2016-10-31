@@ -87,7 +87,7 @@ static uint8_t pattern[] = {
 ISR(TIMER1_OVF_vect) {
     static uint8_t idx = 0;
     static uint8_t next = 0;
-    PORTB = next;
+    PORTD = next;
     next = pattern[idx];
     idx++;
     if (idx >= countof(pattern))
@@ -151,8 +151,11 @@ void SetupHardware(void)
 	//LEDs_Init();
 	USB_Init();
 
-    /* PB[2-7] as output */
-    DDRB |= _BV(0) | _BV(1) | _BV(2) | _BV(3) | _BV(4) | _BV(5);
+    /* PD[2-7] as output */
+    DDRD |= _BV(0) | _BV(1) | _BV(2) | _BV(3) | _BV(4) | _BV(5);
+    //high-side enable? brake?
+    DDRB |= _BV(0);
+    PORTB |= _BV(0);
 }
 
 /** Event handler for the library USB Connection event. */
